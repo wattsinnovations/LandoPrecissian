@@ -1,1 +1,2 @@
-colcon build --allow-overriding realsense_test
+colcon build --allow-overriding lando ros2_aruco ros2_aruco_interfaces
+. install/setup.bash

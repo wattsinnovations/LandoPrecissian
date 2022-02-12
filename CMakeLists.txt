@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(realsense_test)
+project(lando)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -47,15 +47,15 @@ include_directories(${CMAKE_SOURCE_DIR}/libraries/c_library_v2/auterion)
 include_directories(${CMAKE_SOURCE_DIR}/src/Mavlink)
 include_directories(${CMAKE_SOURCE_DIR}/src/misc)
 
-add_executable(test_app
+add_executable(app
 	src/main.cpp
 	src/misc/global_include.cpp
     src/Mavlink/Mavlink.cpp
     src/Mavlink/udp_connection.cpp
 )
-ament_target_dependencies(test_app rclcpp std_msgs ros2_aruco_interfaces)
+ament_target_dependencies(app rclcpp std_msgs ros2_aruco_interfaces)
 
-install(TARGETS test_app
+install(TARGETS app
 	DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -27,6 +27,49 @@ void Mavlink::handle_message(const mavlink_message_t& message)
 	}
 }
 
+void Mavlink::send_landing_target(float p[3], float q[4])
+{
+	mavlink_message_t message;
+
+	uint64_t time_usec = micros();
+
+	// UNUSED???
+	float angle_x = {};
+	float angle_y = {};
+	float distance = {};
+	float size_x = {};
+	float size_y = {};
+	uint8_t target_num = {};
+
+	// https://mavlink.io/en/services/landing_target.html#positional
+	uint8_t frame = MAV_FRAME_LOCAL_NED;
+	uint8_t type = LANDING_TARGET_TYPE_VISION_FIDUCIAL;
+	uint8_t position_valid = true;
+
+	mavlink_msg_landing_target_pack(
+		AUTOPILOT_SYS_ID,
+		TEST_COMPONENT_ID,
+		&message,
+		time_usec,
+		angle_x,
+		angle_y,
+		distance,
+		size_x,
+		size_y,
+		target_num,
+		frame,
+		p[0],
+		p[1],
+		p[2],
+		q,
+		type,
+		position_valid);
+
+	if (_connection->connected()) {
+		_connection->send_message(message);
+	}
+}
+
 void Mavlink::send_heartbeat()
 {
 	mavlink_message_t message;

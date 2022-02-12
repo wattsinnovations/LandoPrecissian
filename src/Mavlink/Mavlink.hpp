@@ -21,7 +21,7 @@ public:
 	//-----------------------------------------------------------------------------
 	// Message senders
 	void send_heartbeat();
-	// void send_winch_status(const mavlink_winch_status_t& telem);
+	void send_landing_target(float p[3], float q[4]);
 
 	//-----------------------------------------------------------------------------
 	// Helpers
