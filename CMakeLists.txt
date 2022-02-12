@@ -19,11 +19,13 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(ros2_aruco_interfaces REQUIRED)
+
 
 add_executable(test_app
 	src/test.cpp
 )
-ament_target_dependencies(test_app rclcpp std_msgs)
+ament_target_dependencies(test_app rclcpp std_msgs ros2_aruco_interfaces)
 
 install(TARGETS test_app
 	DESTINATION lib/${PROJECT_NAME})

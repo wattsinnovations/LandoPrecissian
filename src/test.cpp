@@ -5,26 +5,29 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "ros2_aruco_interfaces/msg/aruco_markers.hpp"
 
 class JakesNode : public rclcpp::Node {
 public:
 JakesNode()
 	: Node("jakes_node")
 {
-	auto callback = [this](std_msgs::msg::String::UniquePtr msg) {
-		RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
+	auto callback = [this](ros2_aruco_interfaces::msg::ArucoMarkers::UniquePtr msg) {
+		RCLCPP_INFO(this->get_logger(), "x: %f", msg->poses[0].position.x);
+		RCLCPP_INFO(this->get_logger(), "y: %f", msg->poses[0].position.y);
+		RCLCPP_INFO(this->get_logger(), "z: %f", msg->poses[0].position.z);
 	};
 
-	_subscription = this->create_subscription<std_msgs::msg::String>("topic", 10, callback);
+	_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 }
 
 private:
-	rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription;
+	rclcpp::Subscription<ros2_aruco_interfaces::msg::ArucoMarkers>::SharedPtr _aruco_sub;
 };
 
 int main(int argc, char * argv[])
 {
-    rclcpp::Rate loop_rate(1);
+    rclcpp::Rate loop_rate(50);
 
 	rclcpp::init(argc, argv);
 	// rclcpp::spin(std::make_shared<JakesNode>()); // Processes callbacks continuously
@@ -33,14 +36,14 @@ int main(int argc, char * argv[])
 	while (rclcpp::ok()) {
 
 		rclcpp::spin_some(node); // Processes callbacks until idle
-		RCLCPP_INFO(node->get_logger(), "I spun");
+		// RCLCPP_INFO(node->get_logger(), "I spun");
 
 		// Do something?
 
 		loop_rate.sleep();
 	}
 
-		RCLCPP_INFO(node->get_logger(), "I exit now hhehehe");
+		RCLCPP_INFO(node->get_logger(), "I exit now hehehe");
 
 	rclcpp::shutdown();
 	return 0;
