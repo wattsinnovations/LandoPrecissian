@@ -12,7 +12,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_compile_options(-Wall -Wextra -Wpedantic)
+	add_compile_options(-Wall -Wextra -Wno-address-of-packed-member)
 endif()
 
 # find dependencies
@@ -44,9 +44,14 @@ endif()
 add_definitions( -DAPP_GIT_VERSION="${GIT_VERSION}")
 
 include_directories(${CMAKE_SOURCE_DIR}/libraries/c_library_v2/auterion)
+include_directories(${CMAKE_SOURCE_DIR}/src/Mavlink)
+include_directories(${CMAKE_SOURCE_DIR}/src/misc)
 
 add_executable(test_app
 	src/main.cpp
+	src/misc/global_include.cpp
+    src/Mavlink/Mavlink.cpp
+    src/Mavlink/udp_connection.cpp
 )
 ament_target_dependencies(test_app rclcpp std_msgs ros2_aruco_interfaces)
 
