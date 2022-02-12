@@ -21,9 +21,32 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ros2_aruco_interfaces REQUIRED)
 
+# Determine git version
+exec_program(
+    "git"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ARGS "describe"
+    OUTPUT_VARIABLE GIT_TAG
+ )
+
+#...if not found get the SHA1 hash instead
+if(${GIT_TAG} MATCHES "fatal:.*")
+    exec_program(
+        "git"
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ARGS "rev-parse HEAD"
+        OUTPUT_VARIABLE GIT_VERSION
+    )
+else()
+    set(GIT_VERSION ${GIT_TAG})
+endif()
+
+add_definitions( -DAPP_GIT_VERSION="${GIT_VERSION}")
+
+include_directories(${CMAKE_SOURCE_DIR}/libraries/c_library_v2/auterion)
 
 add_executable(test_app
-	src/test.cpp
+	src/main.cpp
 )
 ament_target_dependencies(test_app rclcpp std_msgs ros2_aruco_interfaces)
 
