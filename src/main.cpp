@@ -12,7 +12,6 @@
 
 static constexpr uint64_t HEARTBEAT_INTERVAL_MS = 	500; // 1Hz
 static constexpr uint64_t LANDING_TARGET_INTERVAL_MS = 	100; // 10Hz
-static constexpr int PX4_TARGET_TIMEOUT_SECONDS = 	2; // 1Hz
 
 class ArucoMarkerProcessor : public rclcpp::Node {
 public:
@@ -147,6 +146,8 @@ int main(int argc, char * argv[])
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
 
 		static int state = 0;
+		static constexpr int PX4_TARGET_TIMEOUT_SECONDS = 1;
+
 		if (dt > PX4_TARGET_TIMEOUT_SECONDS) {
 			if (state != 1) {
 				RCLCPP_INFO(node->get_logger(), RED_TEXT "No markers detected" NORMAL_TEXT);
