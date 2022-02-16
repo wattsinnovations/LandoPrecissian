@@ -28,7 +28,9 @@ ArucoMarkerProcessor()
 			_tag_quat = msg->poses[0].orientation;
 			_last_update_time = this->get_clock()->now();
 
-			this->send_landing_target();
+			if (millis() < (this->_mavlink->vehicle_odometry().last_time + 1000)) {
+				this->send_landing_target();
+			}
 		};
 
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
@@ -70,8 +72,72 @@ void ArucoMarkerProcessor::send_landing_target()
 	uint64_t time_now = millis();
 
 	if (time_now > last_time_ms + LANDING_TARGET_INTERVAL_MS) {
-		float point[3] = { (float)_tag_point.x, (float)_tag_point.y, (float)_tag_point.z };
-		float quat[4] = {(float)_tag_quat.x, (float)_tag_quat.y, (float)_tag_quat.z, (float)_tag_quat.w};
+
+		mavlink::VehicleOdometry odom = _mavlink->vehicle_odometry();
+
+		// Calculate yaw from quaternions
+		// https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
+		float w = odom.q[0];
+		float x = odom.q[1];
+		float y = odom.q[2];
+		float z = odom.q[3];
+		// float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
+		float yaw = M_PI/2.0f;
+		// float yaw = 0;
+
+		// Correct the signs on the axes (done)
+		float tag_y = -_tag_point.y;
+		float tag_x = _tag_point.x;
+		float tag_z = _tag_point.z;
+
+		// https://doubleroot.in/lessons/coordinate-geometry-basics/translation-rotation-examples/
+		// Rotate the camera origin into the FMU Local NED frame
+
+		// LOG("tag_n: %f", tag_y);
+		// LOG("tag_e: %f", tag_x);
+		// LOG("tag_d: %f", tag_z);
+		// LOG("\n");
+
+		// Perform the rotation and translation
+		// static constexpr float BOOM_LENGTH = 0; // meters
+		// float camera_origin_n = BOOM_LENGTH * cos(yaw);
+		// float camera_origin_e = BOOM_LENGTH * sin(yaw);
+		tag_x = tag_x * cos(yaw) - tag_y * sin(yaw);
+		tag_y = tag_x * sin(yaw) + tag_y * cos(yaw);
+
+		LOG("tag_n: %f", tag_y);
+		LOG("tag_e: %f", tag_x);
+		LOG("tag_d: %f", tag_z);
+		LOG("\n");
+
+		// Offset from current pos from odometry
+		float target_north = odom.x + tag_y;
+		float target_east = odom.y + tag_x;
+		float target_down = odom.z + tag_z;
+
+		// LOG("odom_n: %f", odom.x);
+		// LOG("odom_e: %f", odom.y);
+		// LOG("odom_d: %f", odom.z);
+		// LOG("\n");
+
+		// LOG("yaw: %f", yaw);
+		// LOG("tgt_n: %f", target_north);
+		// LOG("tgt_e: %f", target_east);
+		// LOG("tgt_d: %f", target_down);
+		// LOG("\n");
+
+		// LOG("n: %f", north);
+		// LOG("e: %f", east);
+		// LOG("d: %f", down);
+
+
+
+		float point[3] = { target_north, target_east, target_down };
+
+
+		// float quat[4] = {(float)_tag_quat.x, (float)_tag_quat.y, (float)_tag_quat.z, (float)_tag_quat.w};
+		float quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Zero rotation
+
 		_mavlink->send_landing_target(point, quat);
 		last_time_ms = time_now;
 		LOG("sending landing_target");
@@ -98,8 +164,8 @@ int main(int argc, char * argv[])
 
 		} else {
 			// We have valid aruco_marker data coming in. Convert to mavlink
-			auto& clk = *node->get_clock();
-			RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Spinning");
+			// auto& clk = *node->get_clock();
+			// RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Spinning");
 		}
 
 		loop_rate.sleep();

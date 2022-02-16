@@ -22,6 +22,13 @@ void Mavlink::handle_message(const mavlink_message_t& message)
 	// - MAVLINK_MSG_ID_COMMAND_LONG: from Autopilot or GCS
 	// - MAVLINK_MSG_ID_DISTANCE_SENSOR: from Autopilot
 	switch (message.msgid) {
+		case MAVLINK_MSG_ID_ODOMETRY:
+		{
+			mavlink_odometry_t msg;
+			mavlink_msg_odometry_decode(&message, &msg);
+			handle_odometry(msg);
+			break;
+		}
 		default:
 			break;
 	}
@@ -87,6 +94,20 @@ void Mavlink::send_heartbeat()
 	if (_connection->connected()) {
 		_connection->send_message(message);
 	}
+}
+
+void Mavlink::handle_odometry(const mavlink_odometry_t& message)
+{
+	// LOG("handle_odometry");
+	std::lock_guard<std::mutex> lock(_odometry_mutex);
+	_vehicle_odometry.x = message.x;
+	_vehicle_odometry.y = message.y;
+	_vehicle_odometry.z = message.z;
+	_vehicle_odometry.q[0] = message.q[0];
+	_vehicle_odometry.q[1] = message.q[1];
+	_vehicle_odometry.q[2] = message.q[2];
+	_vehicle_odometry.q[3] = message.q[3];
+	_vehicle_odometry.last_time = millis();
 }
 
 } // end namespace mavlink
