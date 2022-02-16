@@ -96,15 +96,18 @@ void ArucoMarkerProcessor::send_landing_target()
 		tag_y = r * sin(alpha);
 		tag_x = r * cos(alpha);
 
-		LOG("tag_n: %f", tag_y);
-		LOG("tag_e: %f", tag_x);
-		LOG("tag_d: %f", tag_z);
-		LOG("\n");
+		// LOG("tag_n: %f", tag_y);
+		// LOG("tag_e: %f", tag_x);
+		// LOG("tag_d: %f", tag_z);
+		// LOG("\n");
 
 		// Offset from current pos from odometry
 		float target_north = odom.x + tag_y;
 		float target_east = odom.y + tag_x;
 		float target_down = odom.z + tag_z;
+
+		auto& clk = *this->get_clock();
+		RCLCPP_INFO_THROTTLE(this->get_logger(), clk, 1000, "Target:\nn: %f\ne: %f\nd: %f", target_north, target_east, target_down);
 
 		// LOG("odom_n: %f", odom.x);
 		// LOG("odom_e: %f", odom.y);
@@ -119,13 +122,12 @@ void ArucoMarkerProcessor::send_landing_target()
 
 		float point[3] = { target_north, target_east, target_down };
 
-
 		// float quat[4] = {(float)_tag_quat.x, (float)_tag_quat.y, (float)_tag_quat.z, (float)_tag_quat.w};
 		float quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Zero rotation
 
 		_mavlink->send_landing_target(point, quat);
 		last_time_ms = time_now;
-		LOG("sending landing_target");
+		// LOG("sending landing_target");
 	}
 }
 
@@ -143,14 +145,20 @@ int main(int argc, char * argv[])
 
 		// Monitor the update jitter and report timeouts
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
+
+		static int state = 0;
 		if (dt > PX4_TARGET_TIMEOUT_SECONDS) {
-			auto& clk = *node->get_clock();
-			RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, RED_TEXT "Aruco updates spurious..." NORMAL_TEXT);
+			if (state != 1) {
+				RCLCPP_INFO(node->get_logger(), RED_TEXT "No markers detected" NORMAL_TEXT);
+				state = 1;
+			}
 
 		} else {
 			// We have valid aruco_marker data coming in. Convert to mavlink
-			// auto& clk = *node->get_clock();
-			// RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Spinning");
+			if (state != 0) {
+				RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Processing markers" NORMAL_TEXT);
+				state = 0;
+			}
 		}
 
 		loop_rate.sleep();
