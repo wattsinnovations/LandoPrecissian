@@ -81,8 +81,8 @@ void ArucoMarkerProcessor::send_landing_target()
 		float x = odom.q[1];
 		float y = odom.q[2];
 		float z = odom.q[3];
-		// float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
-		float yaw = M_PI/2.0f;
+		float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
+		// float yaw = -M_PI / 2.0f;
 		// float yaw = 0;
 
 		// Correct the signs on the axes (done)
@@ -90,20 +90,11 @@ void ArucoMarkerProcessor::send_landing_target()
 		float tag_x = _tag_point.x;
 		float tag_z = _tag_point.z;
 
-		// https://doubleroot.in/lessons/coordinate-geometry-basics/translation-rotation-examples/
-		// Rotate the camera origin into the FMU Local NED frame
-
-		// LOG("tag_n: %f", tag_y);
-		// LOG("tag_e: %f", tag_x);
-		// LOG("tag_d: %f", tag_z);
-		// LOG("\n");
-
-		// Perform the rotation and translation
-		// static constexpr float BOOM_LENGTH = 0; // meters
-		// float camera_origin_n = BOOM_LENGTH * cos(yaw);
-		// float camera_origin_e = BOOM_LENGTH * sin(yaw);
-		tag_x = tag_x * cos(yaw) - tag_y * sin(yaw);
-		tag_y = tag_x * sin(yaw) + tag_y * cos(yaw);
+		float r = sqrtf(tag_x * tag_x + tag_y * tag_y);
+		float omega = atan2(tag_x, tag_y);
+		float alpha = M_PI/2 - omega - yaw;
+		tag_y = r * sin(alpha);
+		tag_x = r * cos(alpha);
 
 		LOG("tag_n: %f", tag_y);
 		LOG("tag_e: %f", tag_x);
@@ -125,12 +116,6 @@ void ArucoMarkerProcessor::send_landing_target()
 		// LOG("tgt_e: %f", target_east);
 		// LOG("tgt_d: %f", target_down);
 		// LOG("\n");
-
-		// LOG("n: %f", north);
-		// LOG("e: %f", east);
-		// LOG("d: %f", down);
-
-
 
 		float point[3] = { target_north, target_east, target_down };
 
