@@ -35,8 +35,10 @@ ArucoMarkerProcessor()
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 		// Starts the mavlink connection interface
-		std::string ip = "10.41.1.2";
-		int port = 14550;
+		std::string ip = "172.50.1.2"; // IP address of Skynode AI
+		int port = 14562;
+		// std::string ip = "10.41.1.2";
+		// int port = 14550;
 		_mavlink = new mavlink::Mavlink(ip, port);
 		RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
 	}
