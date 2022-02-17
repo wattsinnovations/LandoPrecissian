@@ -35,14 +35,10 @@ ArucoMarkerProcessor()
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 		// Starts the mavlink connection interface
-		// std::string ip = "10.41.1.1";
-		// int port = 14562;
-		// std::string ip = "127.0.0.1";
-		std::string ip = "172.50.1.1";
-		int port = 14563;
+		std::string ip = "10.41.1.2";
+		int port = 14550;
 		_mavlink = new mavlink::Mavlink(ip, port);
 		RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
-
 	}
 
 	void send_heartbeat();
@@ -152,8 +148,7 @@ int main(int argc, char * argv[])
 		rclcpp::spin_some(node); // Processes callbacks until idle
 
 		auto& clk = *node->get_clock();
-		RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, RED_TEXT "Mavlink connected: %d" NORMAL_TEXT, node->mavlink_connected());
-
+		RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Mavlink connected: %d", node->mavlink_connected());
 		// Monitor the update jitter and report timeouts
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
 
