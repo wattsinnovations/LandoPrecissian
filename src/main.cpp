@@ -48,6 +48,8 @@ ArucoMarkerProcessor()
 	void send_heartbeat();
 	void send_landing_target();
 
+	bool mavlink_connected() { return _mavlink->connected(); };
+
 	rclcpp::Time last_tag_update() { return _last_update_time; };
 
 private:
@@ -148,6 +150,9 @@ int main(int argc, char * argv[])
 
 		// node->send_heartbeat(); // Are heartbeats even necessary?
 		rclcpp::spin_some(node); // Processes callbacks until idle
+
+		auto& clk = *node->get_clock();
+		RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, RED_TEXT "Mavlink connected: %d" NORMAL_TEXT, node->mavlink_connected());
 
 		// Monitor the update jitter and report timeouts
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
