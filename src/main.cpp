@@ -35,7 +35,7 @@ ArucoMarkerProcessor()
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 		// Starts the mavlink connection interface
-		_mavlink = new mavlink::Mavlink("127.0.0.1", 14562);
+		_mavlink = new mavlink::Mavlink("172.50.1.1", 14562);
 	}
 
 	void send_heartbeat();
