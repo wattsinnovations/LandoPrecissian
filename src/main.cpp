@@ -35,7 +35,13 @@ ArucoMarkerProcessor()
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 		// Starts the mavlink connection interface
-		_mavlink = new mavlink::Mavlink("172.50.1.1", 14562);
+		// std::string ip = "10.41.1.1";
+		// int port = 14562;
+		std::string ip = "127.0.0.1";
+		int port = 14563;
+		_mavlink = new mavlink::Mavlink(ip, port);
+		RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
+
 	}
 
 	void send_heartbeat();
