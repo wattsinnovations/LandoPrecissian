@@ -16,7 +16,7 @@ static constexpr uint64_t LANDING_TARGET_INTERVAL_MS = 	100; // 10Hz
 class ArucoMarkerProcessor : public rclcpp::Node {
 public:
 ArucoMarkerProcessor()
-		: Node("lando_precissian")
+		: Node("lando")
 		, _last_update_time(this->get_clock()->now())
 	{
 		std::string version(APP_GIT_VERSION);
