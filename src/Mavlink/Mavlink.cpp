@@ -41,12 +41,12 @@ void Mavlink::send_landing_target(float p[3], float q[4])
 	uint64_t time_usec = micros();
 
 	// UNUSED???
+	uint8_t target_num = {};
 	float angle_x = {};
 	float angle_y = {};
 	float distance = {};
 	float size_x = {};
 	float size_y = {};
-	uint8_t target_num = {};
 
 	// https://mavlink.io/en/services/landing_target.html#positional
 	uint8_t frame = MAV_FRAME_LOCAL_NED;
@@ -58,13 +58,13 @@ void Mavlink::send_landing_target(float p[3], float q[4])
 		TEST_COMPONENT_ID,
 		&message,
 		time_usec,
+		target_num,
+		frame,
 		angle_x,
 		angle_y,
 		distance,
 		size_x,
 		size_y,
-		target_num,
-		frame,
 		p[0],
 		p[1],
 		p[2],
