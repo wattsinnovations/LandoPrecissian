@@ -24,9 +24,9 @@ void Mavlink::handle_message(const mavlink_message_t& message)
 	switch (message.msgid) {
 		case MAVLINK_MSG_ID_ODOMETRY:
 		{
-			mavlink_odometry_t msg;
-			mavlink_msg_odometry_decode(&message, &msg);
-			handle_odometry(msg);
+			// mavlink_odometry_t msg;
+			// mavlink_msg_odometry_decode(&message, &msg);
+			// handle_odometry(msg);
 			break;
 		}
 		default:
@@ -36,41 +36,31 @@ void Mavlink::handle_message(const mavlink_message_t& message)
 
 void Mavlink::send_landing_target(float p[3], float q[4])
 {
+	(void) q; // UNUSED
 	mavlink_message_t message;
 
-	uint64_t time_usec = micros();
-
-	// UNUSED???
-	uint8_t target_num = {};
-	float angle_x = {};
-	float angle_y = {};
-	float distance = {};
-	float size_x = {};
-	float size_y = {};
+	// PX4 Implementation
+	// 			irlock_report.timestamp = hrt_absolute_time();
+	// UNUSED: 	irlock_report.signature = landing_target.target_num;
+	// 			irlock_report.pos_x = landing_target.angle_x;
+	// 			irlock_report.pos_y = landing_target.angle_y;
+	// UNUSED: 	irlock_report.size_x = landing_target.size_x;
+	// UNUSED: 	irlock_report.size_y = landing_target.size_y;
+	//
+	// When looking along the optical axis of the camera, x points right, y points down, and z points along the optical axis.
+	// float32 pos_x # tan(theta), where theta is the angle between the target and the camera center of projection in camera x-axis
+	// float32 pos_y # tan(theta), where theta is the angle between the target and the camera center of projection in camera y-axis
 
 	// https://mavlink.io/en/services/landing_target.html#positional
-	uint8_t frame = MAV_FRAME_LOCAL_NED;
-	uint8_t type = LANDING_TARGET_TYPE_VISION_FIDUCIAL;
-	uint8_t position_valid = true;
+	// https://github.com/PX4/PX4-Autopilot/pull/14959
+	mavlink_landing_target_t landing_target = {};
+	// https://github.com/PX4/PX4-SITL_gazebo/blob/master/src/gazebo_irlock_plugin.cpp
+	float x = p[0]; // pos_x (right) -- it's the same for ours!
+	float y = p[1];
+	landing_target.angle_x = x / sqrtf(x*x + y*y);
+	landing_target.angle_y = y / sqrtf(x*x + y*y);
 
-	mavlink_msg_landing_target_pack(
-		AUTOPILOT_SYS_ID,
-		TEST_COMPONENT_ID,
-		&message,
-		time_usec,
-		target_num,
-		frame,
-		angle_x,
-		angle_y,
-		distance,
-		size_x,
-		size_y,
-		p[0],
-		p[1],
-		p[2],
-		q,
-		type,
-		position_valid);
+	mavlink_msg_landing_target_encode(AUTOPILOT_SYS_ID, TEST_COMPONENT_ID, &message, &landing_target);
 
 	if (_connection->connected()) {
 		_connection->send_message(message);

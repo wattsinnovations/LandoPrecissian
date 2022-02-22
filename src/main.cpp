@@ -27,9 +27,12 @@ ArucoMarkerProcessor()
 			_tag_quat = msg->poses[0].orientation;
 			_last_update_time = this->get_clock()->now();
 
-			if (millis() < (this->_mavlink->vehicle_odometry().last_time + 1000)) {
-				this->send_landing_target();
-			}
+			this->send_landing_target();
+
+
+			// if (millis() < (this->_mavlink->vehicle_odometry().last_time + 1000)) {
+			// 	this->send_landing_target();
+			// }
 		};
 
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
@@ -68,7 +71,7 @@ void ArucoMarkerProcessor::send_heartbeat()
 	if (time_now > last_time_ms + HEARTBEAT_INTERVAL_MS) {
 		_mavlink->send_heartbeat();
 		last_time_ms = time_now;
-		LOG("sending heartbeat");
+		// LOG("sending heartbeat");
 	}
 }
 
@@ -79,56 +82,37 @@ void ArucoMarkerProcessor::send_landing_target()
 
 	if (time_now > last_time_ms + LANDING_TARGET_INTERVAL_MS) {
 
-		mavlink::VehicleOdometry odom = _mavlink->vehicle_odometry();
+		// mavlink::VehicleOdometry odom = _mavlink->vehicle_odometry();
 
-		// Calculate yaw from quaternions
-		// https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
-		float w = odom.q[0];
-		float x = odom.q[1];
-		float y = odom.q[2];
-		float z = odom.q[3];
-		float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
-		// float yaw = -M_PI / 2.0f;
-		// float yaw = 0;
+		// // Calculate yaw from quaternions
+		// // https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
+		// float w = odom.q[0];
+		// float x = odom.q[1];
+		// float y = odom.q[2];
+		// float z = odom.q[3];
+		// float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
+		// // float yaw = -M_PI / 2.0f;
+		// // float yaw = 0;
 
-		// Correct the signs on the axes (done)
-		float tag_y = -_tag_point.y;
-		float tag_x = _tag_point.x;
-		float tag_z = _tag_point.z;
+		// // Correct the signs on the axes (done)
+		// float tag_y = -_tag_point.y;
+		// float tag_x = _tag_point.x;
+		// float tag_z = _tag_point.z;
 
-		float r = sqrtf(tag_x * tag_x + tag_y * tag_y);
-		float omega = atan2(tag_x, tag_y);
-		float alpha = M_PI/2 - omega - yaw;
-		tag_y = r * sin(alpha);
-		tag_x = r * cos(alpha);
+		// float r = sqrtf(tag_x * tag_x + tag_y * tag_y);
+		// float omega = atan2(tag_x, tag_y);
+		// float alpha = M_PI/2 - omega - yaw;
+		// tag_y = r * sin(alpha);
+		// tag_x = r * cos(alpha);
 
-		// LOG("tag_n: %f", tag_y);
-		// LOG("tag_e: %f", tag_x);
-		// LOG("tag_d: %f", tag_z);
-		// LOG("\n");
+		// // Offset from current pos from odometry
+		// float target_north = odom.x + tag_y;
+		// float target_east = odom.y + tag_x;
+		// float target_down = odom.z + tag_z;
 
-		// Offset from current pos from odometry
-		float target_north = odom.x + tag_y;
-		float target_east = odom.y + tag_x;
-		float target_down = odom.z + tag_z;
+		// WE ONLY USE THE X/Y because we are using the irlock gazebo hack
 
-		auto& clk = *this->get_clock();
-		RCLCPP_INFO_THROTTLE(this->get_logger(), clk, 1000, "Target:\nn: %f\ne: %f\nd: %f", target_north, target_east, target_down);
-
-		// LOG("odom_n: %f", odom.x);
-		// LOG("odom_e: %f", odom.y);
-		// LOG("odom_d: %f", odom.z);
-		// LOG("\n");
-
-		// LOG("yaw: %f", yaw);
-		// LOG("tgt_n: %f", target_north);
-		// LOG("tgt_e: %f", target_east);
-		// LOG("tgt_d: %f", target_down);
-		// LOG("\n");
-
-		float point[3] = { target_north, target_east, target_down };
-
-		// float quat[4] = {(float)_tag_quat.x, (float)_tag_quat.y, (float)_tag_quat.z, (float)_tag_quat.w};
+		float point[3] = { (float)_tag_point.x, (float)_tag_point.y, 0 }; // TODO: check if this is right
 		float quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Zero rotation
 
 		_mavlink->send_landing_target(point, quat);
@@ -149,8 +133,8 @@ int main(int argc, char * argv[])
 		// node->send_heartbeat(); // Are heartbeats even necessary?
 		rclcpp::spin_some(node); // Processes callbacks until idle
 
-		auto& clk = *node->get_clock();
-		RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Mavlink connected: %d", node->mavlink_connected());
+		// auto& clk = *node->get_clock();
+		// RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Mavlink connected: %d", node->mavlink_connected());
 		// Monitor the update jitter and report timeouts
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
 
