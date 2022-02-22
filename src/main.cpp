@@ -112,7 +112,7 @@ void ArucoMarkerProcessor::send_landing_target()
 
 		// WE ONLY USE THE X/Y because we are using the irlock gazebo hack
 
-		float point[3] = { (float)_tag_point.x, (float)_tag_point.y, 0 }; // TODO: check if this is right
+		float point[3] = { (float)_tag_point.x, (float)_tag_point.y, (float)_tag_point.z }; // TODO: check if this is right
 		float quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Zero rotation
 
 		_mavlink->send_landing_target(point, quat);

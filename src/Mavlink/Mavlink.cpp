@@ -57,8 +57,10 @@ void Mavlink::send_landing_target(float p[3], float q[4])
 	// https://github.com/PX4/PX4-SITL_gazebo/blob/master/src/gazebo_irlock_plugin.cpp
 	float x = p[0]; // pos_x (right) -- it's the same for ours!
 	float y = p[1];
-	landing_target.angle_x = x / sqrtf(x*x + y*y);
-	landing_target.angle_y = y / sqrtf(x*x + y*y);
+	float z = p[2];
+
+	landing_target.angle_x = -y / x;
+	landing_target.angle_y = -z / x;
 
 	mavlink_msg_landing_target_encode(AUTOPILOT_SYS_ID, TEST_COMPONENT_ID, &message, &landing_target);
 
