@@ -34,34 +34,14 @@ void Mavlink::handle_message(const mavlink_message_t& message)
 	}
 }
 
-void Mavlink::send_landing_target(float p[3], float q[4])
+void Mavlink::send_landing_target(float angle_x, float angle_y)
 {
-	(void) q; // UNUSED
 	mavlink_message_t message;
 
-	// PX4 Implementation
-	// 			irlock_report.timestamp = hrt_absolute_time();
-	// UNUSED: 	irlock_report.signature = landing_target.target_num;
-	// 			irlock_report.pos_x = landing_target.angle_x;
-	// 			irlock_report.pos_y = landing_target.angle_y;
-	// UNUSED: 	irlock_report.size_x = landing_target.size_x;
-	// UNUSED: 	irlock_report.size_y = landing_target.size_y;
-	//
-	// When looking along the optical axis of the camera, x points right, y points down, and z points along the optical axis.
-	// float32 pos_x # tan(theta), where theta is the angle between the target and the camera center of projection in camera x-axis
-	// float32 pos_y # tan(theta), where theta is the angle between the target and the camera center of projection in camera y-axis
-
-	// https://mavlink.io/en/services/landing_target.html#positional
-	// https://github.com/PX4/PX4-Autopilot/pull/14959
 	mavlink_landing_target_t landing_target = {};
-	// https://github.com/PX4/PX4-SITL_gazebo/blob/master/src/gazebo_irlock_plugin.cpp
-	float r = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
-	float x = p[0]/r;
-	float y = p[1]/r;
-	float z = p[2]/r;
 
-	landing_target.angle_x = x / z;
-	landing_target.angle_y = y / z;
+	landing_target.angle_x = angle_x;
+	landing_target.angle_y = angle_y;
 
 	mavlink_msg_landing_target_encode(AUTOPILOT_SYS_ID, TEST_COMPONENT_ID, &message, &landing_target);
 

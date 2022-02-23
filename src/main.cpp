@@ -10,9 +10,6 @@
 
 #include <Mavlink.hpp>
 
-static constexpr uint64_t HEARTBEAT_INTERVAL_MS = 	500; // 1Hz
-static constexpr uint64_t LANDING_TARGET_INTERVAL_MS = 	100; // 10Hz
-
 class ArucoMarkerProcessor : public rclcpp::Node {
 public:
 ArucoMarkerProcessor()
@@ -23,31 +20,21 @@ ArucoMarkerProcessor()
 		RCLCPP_INFO(this->get_logger(), "Version: " GREEN_TEXT "%s" NORMAL_TEXT, version.c_str());
 
 		auto callback = [this](ros2_aruco_interfaces::msg::ArucoMarkers::UniquePtr msg) {
-			_tag_point = msg->poses[0].position;
-			_tag_quat = msg->poses[0].orientation;
 			_last_update_time = this->get_clock()->now();
-
-			this->send_landing_target();
-
-
-			// if (millis() < (this->_mavlink->vehicle_odometry().last_time + 1000)) {
-			// 	this->send_landing_target();
-			// }
+			this->send_landing_target(msg->poses[0].position.x, msg->poses[0].position.y, msg->poses[0].position.z);
 		};
 
 		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 		// Starts the mavlink connection interface
-		std::string ip = "10.223.0.70"; // IP address of Skynode AI
+		std::string ip = "127.0.0.1";
+		// std::string ip = "10.223.0.70"; // IP address of Skynode AI
 		int port = 14562;
-		// std::string ip = "10.41.1.2";
-		// int port = 14550;
 		_mavlink = new mavlink::Mavlink(ip, port);
 		RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
 	}
 
-	void send_heartbeat();
-	void send_landing_target();
+	void send_landing_target(float x, float y, float z);
 
 	bool mavlink_connected() { return _mavlink->connected(); };
 
@@ -57,68 +44,37 @@ private:
 	rclcpp::Subscription<ros2_aruco_interfaces::msg::ArucoMarkers>::SharedPtr _aruco_sub;
 
 	rclcpp::Time _last_update_time;
-	geometry_msgs::msg::Point _tag_point; // camera reference frame
-	geometry_msgs::msg::Quaternion _tag_quat; // camera reference frame
-
 	mavlink::Mavlink* _mavlink = nullptr;
 };
 
-void ArucoMarkerProcessor::send_heartbeat()
+// We use the PX4 gazebo hack implemenation to fake an irlock so that we can reuse the landing_target_estimator
+//
+// PX4 Implementation
+// 			irlock_report.timestamp = hrt_absolute_time();
+// UNUSED: 	irlock_report.signature = landing_target.target_num;
+// 			irlock_report.pos_x = landing_target.angle_x;
+// 			irlock_report.pos_y = landing_target.angle_y;
+// UNUSED: 	irlock_report.size_x = landing_target.size_x;
+// UNUSED: 	irlock_report.size_y = landing_target.size_y;
+//
+// When looking along the optical axis of the camera, x points right, y points down, and z points along the optical axis.
+// float32 pos_x # tan(theta), where theta is the angle between the target and the camera center of projection in camera x-axis
+// float32 pos_y # tan(theta), where theta is the angle between the target and the camera center of projection in camera y-axis
+
+// https://mavlink.io/en/services/landing_target.html#positional
+// https://github.com/PX4/PX4-Autopilot/pull/14959
+void ArucoMarkerProcessor::send_landing_target(float x, float y, float z)
 {
-	static uint64_t last_time_ms = 0;
-	uint64_t time_now = millis();
+	// Convert to unit vector
+	float r = sqrtf(x*x + y*y + z*z);
+	x = x/r;
+	y = y/r;
+	z = z/r;
+	// https://github.com/PX4/PX4-SITL_gazebo/blob/master/src/gazebo_irlock_plugin.cpp
+	float tan_theta_x = x / z;
+	float tan_theta_y = y / z;
 
-	if (time_now > last_time_ms + HEARTBEAT_INTERVAL_MS) {
-		_mavlink->send_heartbeat();
-		last_time_ms = time_now;
-		// LOG("sending heartbeat");
-	}
-}
-
-void ArucoMarkerProcessor::send_landing_target()
-{
-	static uint64_t last_time_ms = 0;
-	uint64_t time_now = millis();
-
-	if (time_now > last_time_ms + LANDING_TARGET_INTERVAL_MS) {
-
-		// mavlink::VehicleOdometry odom = _mavlink->vehicle_odometry();
-
-		// // Calculate yaw from quaternions
-		// // https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
-		// float w = odom.q[0];
-		// float x = odom.q[1];
-		// float y = odom.q[2];
-		// float z = odom.q[3];
-		// float yaw = atan2(2.0 * (z * w + x * y) , -1.0 + 2.0 * (w * w + x * x));
-		// // float yaw = -M_PI / 2.0f;
-		// // float yaw = 0;
-
-		// // Correct the signs on the axes (done)
-		// float tag_y = -_tag_point.y;
-		// float tag_x = _tag_point.x;
-		// float tag_z = _tag_point.z;
-
-		// float r = sqrtf(tag_x * tag_x + tag_y * tag_y);
-		// float omega = atan2(tag_x, tag_y);
-		// float alpha = M_PI/2 - omega - yaw;
-		// tag_y = r * sin(alpha);
-		// tag_x = r * cos(alpha);
-
-		// // Offset from current pos from odometry
-		// float target_north = odom.x + tag_y;
-		// float target_east = odom.y + tag_x;
-		// float target_down = odom.z + tag_z;
-
-		// WE ONLY USE THE X/Y because we are using the irlock gazebo hack
-
-		float point[3] = { (float)_tag_point.x, (float)_tag_point.y, (float)_tag_point.z }; // TODO: check if this is right
-		float quat[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Zero rotation
-
-		_mavlink->send_landing_target(point, quat);
-		last_time_ms = time_now;
-		// LOG("sending landing_target");
-	}
+	_mavlink->send_landing_target(tan_theta_x, tan_theta_y);
 }
 
 int main(int argc, char * argv[])
@@ -130,11 +86,8 @@ int main(int argc, char * argv[])
 
 	while (rclcpp::ok()) {
 
-		// node->send_heartbeat(); // Are heartbeats even necessary?
 		rclcpp::spin_some(node); // Processes callbacks until idle
 
-		// auto& clk = *node->get_clock();
-		// RCLCPP_INFO_THROTTLE(node->get_logger(), clk, 1000, "Mavlink connected: %d", node->mavlink_connected());
 		// Monitor the update jitter and report timeouts
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
 
@@ -148,9 +101,8 @@ int main(int argc, char * argv[])
 			}
 
 		} else {
-			// We have valid aruco_marker data coming in. Convert to mavlink
 			if (state != 0) {
-				RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Processing markers" NORMAL_TEXT);
+				RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Processing markers: " NORMAL_TEXT "mavlink ? %u", node->mavlink_connected());
 				state = 0;
 			}
 		}
@@ -158,7 +110,7 @@ int main(int argc, char * argv[])
 		loop_rate.sleep();
 	}
 
-	RCLCPP_INFO(node->get_logger(), "I exit now hehehe");
+	RCLCPP_INFO(node->get_logger(), "Exiting");
 
 	rclcpp::shutdown();
 	return 0;

@@ -28,7 +28,7 @@ public:
 	//-----------------------------------------------------------------------------
 	// Message senders
 	void send_heartbeat();
-	void send_landing_target(float p[3], float q[4]);
+	void send_landing_target(float angle_x, float angle_y);
 
 	//-----------------------------------------------------------------------------
 	// Helpers
