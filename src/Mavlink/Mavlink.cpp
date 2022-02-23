@@ -4,8 +4,7 @@ namespace mavlink {
 
 Mavlink::Mavlink(const std::string& local_ip, int local_port)
 {
-	_connection = new UdpConnection(local_ip, local_port, std::bind(&Mavlink::handle_message,
-																	this, std::placeholders::_1));
+	_connection = new UdpConnection(local_ip, local_port, std::bind(&Mavlink::handle_message, this, std::placeholders::_1));
 	// Sets up the connection and starts the receiving thread
 	_connection->start();
 }

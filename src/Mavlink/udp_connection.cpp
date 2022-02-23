@@ -26,10 +26,6 @@ ConnectionResult UdpConnection::start()
 		return ret;
 	}
 
-	// TESTING:
-	// By default we try and talk to a GCS on port 14550
-	// add_remote("172.50.1.1", 14562);
-
 	start_recv_thread();
 
 	return ConnectionResult::Success;

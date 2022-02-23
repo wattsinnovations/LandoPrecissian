@@ -12,32 +12,9 @@
 
 class ArucoMarkerProcessor : public rclcpp::Node {
 public:
-ArucoMarkerProcessor()
-		: Node("lando")
-		, _last_update_time(this->get_clock()->now())
-	{
-		std::string version(APP_GIT_VERSION);
-		RCLCPP_INFO(this->get_logger(), "Version: " GREEN_TEXT "%s" NORMAL_TEXT, version.c_str());
-
-		auto callback = [this](ros2_aruco_interfaces::msg::ArucoMarkers::UniquePtr msg) {
-			_last_update_time = this->get_clock()->now();
-			this->send_landing_target(msg->poses[0].position.x, msg->poses[0].position.y, msg->poses[0].position.z);
-		};
-
-		_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
-
-		// Starts the mavlink connection interface
-		// std::string ip = "127.0.0.1";
-		std::string ip = "10.223.0.70"; // IP address of Skynode AI
-		int port = 14562;
-		_mavlink = new mavlink::Mavlink(ip, port);
-		RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
-	}
-
+	ArucoMarkerProcessor();
 	void send_landing_target(float x, float y, float z);
-
 	bool mavlink_connected() { return _mavlink->connected(); };
-
 	rclcpp::Time last_tag_update() { return _last_update_time; };
 
 private:
@@ -46,6 +23,28 @@ private:
 	rclcpp::Time _last_update_time;
 	mavlink::Mavlink* _mavlink = nullptr;
 };
+
+ArucoMarkerProcessor::ArucoMarkerProcessor()
+	: Node("lando")
+	, _last_update_time(this->get_clock()->now())
+{
+	std::string version(APP_GIT_VERSION);
+	RCLCPP_INFO(this->get_logger(), "Version: " GREEN_TEXT "%s" NORMAL_TEXT, version.c_str());
+
+	auto callback = [this](ros2_aruco_interfaces::msg::ArucoMarkers::UniquePtr msg) {
+		_last_update_time = this->get_clock()->now();
+		this->send_landing_target(msg->poses[0].position.x, msg->poses[0].position.y, msg->poses[0].position.z);
+	};
+
+	_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
+
+	// Starts the mavlink connection interface
+	// std::string ip = "127.0.0.1";
+	std::string ip = "10.223.0.70"; // IP address of Skynode AI
+	int port = 14562;
+	_mavlink = new mavlink::Mavlink(ip, port);
+	RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
+}
 
 // We use the PX4 gazebo hack implemenation to fake an irlock so that we can reuse the landing_target_estimator
 //
