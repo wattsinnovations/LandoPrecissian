@@ -43,7 +43,7 @@ endif()
 
 add_definitions( -DAPP_GIT_VERSION="${GIT_VERSION}")
 
-include_directories(${CMAKE_SOURCE_DIR}/libraries/c_library_v2/auterion)
+include_directories(${CMAKE_SOURCE_DIR}/libraries/c_library_v2/common)
 include_directories(${CMAKE_SOURCE_DIR}/src/Mavlink)
 include_directories(${CMAKE_SOURCE_DIR}/src/misc)
 

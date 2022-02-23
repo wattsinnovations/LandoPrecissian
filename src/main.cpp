@@ -1,9 +1,3 @@
-// Testing out ros2!
-
-#include <iostream>
-#include <memory>
-#include <chrono>
-
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "ros2_aruco_interfaces/msg/aruco_markers.hpp"
@@ -19,7 +13,6 @@ public:
 
 private:
 	rclcpp::Subscription<ros2_aruco_interfaces::msg::ArucoMarkers>::SharedPtr _aruco_sub;
-
 	rclcpp::Time _last_update_time;
 	mavlink::Mavlink* _mavlink = nullptr;
 };
@@ -39,8 +32,7 @@ ArucoMarkerProcessor::ArucoMarkerProcessor()
 	_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
 
 	// Starts the mavlink connection interface
-	// std::string ip = "127.0.0.1";
-	std::string ip = "10.223.0.70"; // IP address of Skynode AI
+	std::string ip = "10.223.0.70";
 	int port = 14562;
 	_mavlink = new mavlink::Mavlink(ip, port);
 	RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
@@ -78,7 +70,11 @@ void ArucoMarkerProcessor::send_landing_target(float x, float y, float z)
 
 int main(int argc, char * argv[])
 {
-    rclcpp::Rate loop_rate(50);
+	static int state = 0;
+	static bool mavlink_connected = false;
+	static constexpr int PX4_TARGET_TIMEOUT_SECONDS = 1;
+
+	rclcpp::Rate loop_rate(50);
 	rclcpp::init(argc, argv);
 
 	auto node = std::make_shared<ArucoMarkerProcessor>();
@@ -87,12 +83,17 @@ int main(int argc, char * argv[])
 
 		rclcpp::spin_some(node); // Processes callbacks until idle
 
-		// Monitor the update jitter and report timeouts
+		// Update mavlink connected status
+		bool connected = node->mavlink_connected();
+		if (!connected && mavlink_connected) {
+			RCLCPP_INFO(node->get_logger(), RED_TEXT "Mavlink disconnected" NORMAL_TEXT);
+		} else if (connected && !mavlink_connected) {
+			RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Mavlink connected" NORMAL_TEXT);
+		}
+		mavlink_connected = connected;
+
+		// Report if marker detection has timed out
 		double dt = (node->get_clock()->now() - node->last_tag_update()).seconds();
-
-		static int state = 0;
-		static constexpr int PX4_TARGET_TIMEOUT_SECONDS = 1;
-
 		if (dt > PX4_TARGET_TIMEOUT_SECONDS) {
 			if (state != 1) {
 				RCLCPP_INFO(node->get_logger(), RED_TEXT "No markers detected" NORMAL_TEXT);
@@ -101,7 +102,7 @@ int main(int argc, char * argv[])
 
 		} else {
 			if (state != 0) {
-				RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Processing markers: " NORMAL_TEXT "mavlink ? %u", node->mavlink_connected());
+				RCLCPP_INFO(node->get_logger(), GREEN_TEXT "Processing markers: " NORMAL_TEXT "mavlink ? %u", mavlink_connected);
 				state = 0;
 			}
 		}

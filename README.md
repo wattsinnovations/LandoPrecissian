@@ -1,1 +1,1 @@
-![](LandoPrecissian.png)
+![](photos/LandoPrecissian.png)
