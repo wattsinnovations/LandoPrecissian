@@ -33,7 +33,7 @@ ArucoMarkerProcessor::ArucoMarkerProcessor()
 
 	// Starts the mavlink connection interface
 	std::string ip = "10.223.0.70";
-	int port = 14562;
+	int port = 14561;
 	_mavlink = new mavlink::Mavlink(ip, port);
 	RCLCPP_INFO(this->get_logger(), "IP: %s Port: %d", ip.c_str(), port);
 }
