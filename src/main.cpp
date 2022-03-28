@@ -26,7 +26,8 @@ ArucoMarkerProcessor::ArucoMarkerProcessor()
 
 	auto callback = [this](ros2_aruco_interfaces::msg::ArucoMarkers::UniquePtr msg) {
 		_last_update_time = this->get_clock()->now();
-		this->send_landing_target(msg->poses[0].position.x, msg->poses[0].position.y, msg->poses[0].position.z);
+		this->send_landing_target(msg->poses[0].position.x, msg->poses[0].position.y, msg->poses[0].position.z,
+			msg->poses[0].orientation.x, msg->poses[0].orientation.y, msg->poses[0].orientation.z, msg->poses[0].orientation.w);
 	};
 
 	_aruco_sub = this->create_subscription<ros2_aruco_interfaces::msg::ArucoMarkers>("aruco_markers", 10, callback);
@@ -54,7 +55,7 @@ ArucoMarkerProcessor::ArucoMarkerProcessor()
 
 // https://mavlink.io/en/services/landing_target.html#positional
 // https://github.com/PX4/PX4-Autopilot/pull/14959
-void ArucoMarkerProcessor::send_landing_target(float x, float y, float z)
+void ArucoMarkerProcessor::send_landing_target(float x, float y, float z, float q_x, float q_y, float q_z, float q_w)
 {
 	// Convert to unit vector
 	float r = sqrtf(x*x + y*y + z*z);
@@ -65,7 +66,7 @@ void ArucoMarkerProcessor::send_landing_target(float x, float y, float z)
 	float tan_theta_x = x / z;
 	float tan_theta_y = y / z;
 
-	_mavlink->send_landing_target(tan_theta_x, tan_theta_y);
+	_mavlink->send_landing_target(tan_theta_x, tan_theta_y, q_x, q_y, q_z, q_w);
 }
 
 int main(int argc, char * argv[])
