@@ -7,7 +7,7 @@
 class ArucoMarkerProcessor : public rclcpp::Node {
 public:
 	ArucoMarkerProcessor();
-	void send_landing_target(float x, float y, float z);
+	void send_landing_target(float x, float y, float z, float q_x, float q_y, float q_z, float q_w);
 	bool mavlink_connected() { return _mavlink->connected(); };
 	rclcpp::Time last_tag_update() { return _last_update_time; };
 

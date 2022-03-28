@@ -13,7 +13,7 @@ public:
 	Mavlink(const std::string& local_ip, int local_port);
 	~Mavlink();
 
-	void send_landing_target(float angle_x, float angle_y);
+	void send_landing_target(float angle_x, float angle_y, float q_x, float q_y, float q_z, float q_w);
 	bool connected() const { return _connection->connected(); };
 
 private:
